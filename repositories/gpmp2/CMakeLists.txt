@@ -45,7 +45,11 @@ find_package(Boost 1.50 REQUIRED)
 find_package(Boost COMPONENTS filesystem REQUIRED)
 find_package(Boost COMPONENTS system REQUIRED)
 find_package(Boost COMPONENTS thread REQUIRED)
+find_package(Boost COMPONENTS chrono REQUIRED)
+find_package(Boost COMPONENTS timer REQUIRED)
+find_package(Boost COMPONENTS date_time REQUIRED)
 find_package(Boost COMPONENTS serialization REQUIRED)
+
 
 include_directories(${Boost_INCLUDE_DIR})
 
