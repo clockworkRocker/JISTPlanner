@@ -11,12 +11,12 @@ problem:
 
   use_theta : True
   seed_val: 0
-  time_out_time: 300
+  time_out_time: 50
 
   #Robot
-  radius: 1.5
+  radius: 2
   vehicle_dynamics: True
-  vehicle_model: 0.001
+  vehicle_model: 1
 
   #Noise model
   use_noise: True
@@ -24,7 +24,7 @@ problem:
   action_noise: 0.03
 
   # Core GPMP config
-  use_GP_inter: True
+  use_GP_inter: False
   delta_t : 0.25
   inter_step: 4
   avg_vel: 0.1
@@ -33,22 +33,22 @@ problem:
   #GPMP-Factor related
   cost_sigma: 0.2
   epsilon_dist: 4.0
-  #sigma_goal: 2.0
+  sigma_goal: 2.0
   sigma_start: 0.0001
-  use_trustregion_opt: False
+  use_trustregion_opt: True
 
   # Common
   use_vel_limit: True
   sigma_vel_limit: 0.001
   node_budget: 60
-  sdf_side: 100.0
+  sdf_side: 40.0
 
-  #Receding Horizon specific things
+  # Receding Horizon specific things
   init_fraction_length: 0.2
   goal_region_threshold: 0.5
   connection_threshold: 0.5
   same_state_init: True
-  sigma_goal_rh: 10.0
+  # sigma_goal_rh: 10.0
 
   #RRT specific things
   width: 100.0
@@ -58,4 +58,4 @@ problem:
   use_prev_graph: True
   sigma_goal_costco: 4.0
 
-  costco_goal_scaling: 0.0
+  costco_goal_scaling: 0.5
