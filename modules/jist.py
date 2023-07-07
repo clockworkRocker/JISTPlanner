@@ -49,19 +49,11 @@ class Problem:
     """General Interface to set the GPMP problem"""
 
     def __init__(self):
-
         self.gpmp_robot = None
         self.start_conf = None
         self.end_conf = None
         self.start_vel = None
         self.end_vel = None
-
-        self.total_time_sec = None
-        self.total_time_step = None
-        self.total_check_step = None
-        self.delta_t = None
-        self.check_inter = None
-        self.avg_vel = None
 
         self.Qc = None
         self.Qc_model = None
@@ -69,14 +61,12 @@ class Problem:
         self.cost_sigma = None
         self.epsilon_dist = None
 
-        self.fix_sigma = None
         self.pose_fix_model = None
         self.vel_fix_model = None
 
         self.sdf = None
 
         self.seed_val = None
-        self.dropout_prob = None
 
         self.use_GP_inter = None
 
@@ -85,17 +75,19 @@ class Problem:
         self.obstalce_gp_factor_function = None
 
         # Fixed window specific params
-        self.window_size = None  # number of time steps in the window.
-        self.init_fraction_length = (
-            None  # number between 0,1 for deciding inti window length
-        )
+        # self.window_size = None  # number of time steps in the window.
+        # self.init_fraction_length = (
+        #    None  # number between 0,1 for deciding inti window length
+        # )
 
-        self.same_state_init = None
+        # self.same_state_init = None
         self.vehicle_dynamics = None
 
 
 class Node(object):
-    """docstring for Node"""
+    """
+    Holy shit, this is cringe
+    """
 
     def __init__(self, planner_id, pose, vel=None):
         self.planner_id = planner_id
@@ -142,12 +134,16 @@ class PlannerBase(object):
     """docstring for Graph"""
 
     def __init__(self, result, gtsam_graph, planner_graph):
+        """
+        @param result ?
+        @param gtsam_graph The factor graph
+        @param planner_graph The exploring tree
+        """
         self.result = result
         self.gtsam_graph = gtsam_graph
         self.planner_graph = planner_graph
 
     def get_factor_error(self, gt_factor_id):
-
         return self.gtsam_graph.at(gt_factor_id).error(self.result)
 
     def get_edge_cost(self, first_idx, second_idx):
@@ -156,9 +152,9 @@ class PlannerBase(object):
         for gt_factor_id in self.planner_graph[first_idx].neighbours[second_idx]:
             cost += self.get_factor_error(gt_factor_id)
         # add cost of state obstacle factor
-        
+
         cost += self.get_factor_error(self.planner_graph[second_idx].gt_graph_ob_id)
-            
+
         cost += self.get_factor_error(self.planner_graph[second_idx].goal_factor_cost)
         return cost
 
@@ -210,15 +206,13 @@ def plot_path(path, axis):
     return handle
 
 
-def get_initializations_simple(problem):
-
-    inits = []
-    inits.append(np.tile(problem.start_conf, (problem.window_size + 1, 1)))
-    return inits
+# def get_initializations_simple(problem):
+#     inits = []
+#     inits.append(np.tile(problem.start_conf, (problem.window_size + 1, 1)))
+#     return inits
 
 
 def make_point_robot(num_dof=2, radius=1.5):
-
     # point robot model
     pR = PointRobot(num_dof, 1)
     spheres_data = np.asarray([0.0, 0.0, 0.0, 0.0, radius])
@@ -244,7 +238,6 @@ def get_local_frame_vels(temp_vel, yaw):
 
 # Useful for upsampling gpmp solution and plotting
 def get_interpolated_points(curNode, nextNode, problem):
-
     values = Values()
     values.insert(symbol(ord("x"), 0), curNode.pose)
     values.insert(symbol(ord("v"), 0), curNode.vel)
@@ -262,34 +255,29 @@ def get_interpolated_points(curNode, nextNode, problem):
 
     return points
 
-def get_center(x, y, dataset):
 
+def get_center(x, y, dataset):
     center = (
         np.asarray([y - dataset.origin_y, x - dataset.origin_x]) / dataset.cell_size
     )
     return center.astype(int)
-    
+
+
 def in_collision(pose, sq_size, field, dataset):
-        # robot is approximated with a square that enguls the true robot.
-        idxs = get_center(pose[0], pose[1], dataset)
-        if (
-            idxs[0] < 0
-            or idxs[1] < 0
-            or idxs[0] >= dataset.rows
-            or idxs[1] >= dataset.cols
-        ):
-            return False
-
-        if field[idxs[0], idxs[1]] < sq_size:
-            return True
-
+    # robot is approximated with a square that enguls the true robot.
+    idxs = get_center(pose[0], pose[1], dataset)
+    if idxs[0] < 0 or idxs[1] < 0 or idxs[0] >= dataset.rows or idxs[1] >= dataset.cols:
         return False
+
+    if field[idxs[0], idxs[1]] < sq_size:
+        return True
+
+    return False
 
 
 def make_problem_from_config(
     problem_config, start_conf, goal_conf, start_vel=None, goal_vel=None
 ):
-
     problem = Problem()
 
     problem.seed_val = problem_config.seed_val
@@ -317,18 +305,18 @@ def make_problem_from_config(
     problem.sigma_vel_limit = problem_config.sigma_vel_limit
     problem.cost_sigma = problem_config.cost_sigma
     problem.epsilon_dist = problem_config.epsilon_dist
-    problem.sigma_goal_rh = problem_config.sigma_goal_rh
+    #    problem.sigma_goal_rh = problem_config.sigma_goal_rh
     problem.sigma_goal_costco = problem_config.sigma_goal_costco
     problem.sigma_start = problem_config.sigma_start
     problem.use_trustregion_opt = problem_config.use_trustregion_opt
 
     # Receding Horizon specific things
-    problem.same_state_init = problem_config.same_state_init
+    # problem.same_state_init = problem_config.same_state_init
     problem.use_prev_graph = problem_config.use_prev_graph
-    problem.window_size = problem_config.node_budget
+    # problem.window_size = problem_config.node_budget
     problem.init_fraction_length = problem_config.init_fraction_length
     problem.goal_region_threshold = problem_config.goal_region_threshold
-    problem.connection_threshold = problem_config.connection_threshold
+    # problem.connection_threshold = problem_config.connection_threshold
 
     # RRT specific things
     problem.node_num = problem_config.node_budget
@@ -404,14 +392,13 @@ def make_problem_from_config(
     return problem
 
 
-
-
-
 random_rrt = Random()
 
 
 def grow_rrt_planner_graph(nodes, problem):
-
+    """
+    Add new nodes to the exploring tree
+    """
     if problem.num_dof == 3:
         return grow_rrt_planner_graph_theta(nodes, problem)
 
@@ -422,7 +409,6 @@ def grow_rrt_planner_graph(nodes, problem):
     move_along_val = problem.move_along_val
 
     for i in range(len(nodes), node_num):
-
         # sample a random x,y point
         x = (problem.curr_conf[0] - width / 2) + width * random_rrt.random()
         y = (problem.curr_conf[1] - height / 2) + height * random_rrt.random()
@@ -439,7 +425,7 @@ def grow_rrt_planner_graph(nodes, problem):
         # Get new point and add it to the tree.
 
         unit_vect = np.asarray([x, y]) - nodes[min_id].pose
-        unit_vect = unit_vect / (np.linalg.norm(unit_vect))
+        # unit_vect = unit_vect  / (np.linalg.norm(unit_vect))
         new_x = nodes[min_id].pose[0] + move_along_val * unit_vect[0]
         new_y = nodes[min_id].pose[1] + move_along_val * unit_vect[1]
 
@@ -455,7 +441,12 @@ def grow_rrt_planner_graph(nodes, problem):
 
 
 def grow_rrt_planner_graph_theta(nodes, problem):
+    """
+    Add new nodes to the exploring tree considering three degrees of freedom
 
+    FIXME: Why does it require a separate function? Maybe a unified interface with corresponding limits is possible?
+    FIXME: Maybe add collision checking for the points that are being added to the graph?
+    """
     node_num = problem.node_num
     planner_id = problem.planner_id
     width = problem.width
@@ -464,7 +455,6 @@ def grow_rrt_planner_graph_theta(nodes, problem):
     move_along_val_theta = problem.move_along_val_theta
 
     for i in range(len(nodes), node_num):
-
         # sample a random x,y point
         x = (problem.curr_conf[0] - width / 2) + width * random_rrt.random()
         y = (problem.curr_conf[1] - height / 2) + height * random_rrt.random()
@@ -483,6 +473,8 @@ def grow_rrt_planner_graph_theta(nodes, problem):
 
         unit_vect = np.asarray([x, y]) - nodes[min_id].pose[0:2]
         unit_vect = unit_vect / (np.linalg.norm(unit_vect))
+
+        # Lol, new point does not check for collisions, wtf?
         new_x = nodes[min_id].pose[0] + move_along_val * unit_vect[0]
         new_y = nodes[min_id].pose[1] + move_along_val * unit_vect[1]
 
@@ -505,7 +497,9 @@ def grow_rrt_planner_graph_theta(nodes, problem):
 
 
 def get_rrt_planner_graph(problem):
-
+    """
+    Initialize the exploring tree
+    """
     random_rrt.seed(problem.seed_val)
     nodes = {}  # a.k.a RRT tree
     planner_id = problem.planner_id
@@ -523,7 +517,9 @@ def get_rrt_planner_graph(problem):
 
 
 def get_gtsam_graph(node_list, problem):
-
+    """
+    Build the factor graph from the exploring tree nodes
+    """
     # init optimization
     graph = NonlinearFactorGraph()
     init_values = Values()
@@ -533,11 +529,11 @@ def get_gtsam_graph(node_list, problem):
         key_pos = symbol(ord("x"), i)
         key_vel = symbol(ord("v"), i)
 
-        #% initialize as straight line in conf space
+        # % initialize as straight line in conf space
         init_values.insert(key_pos, node_list[i].pose)
         init_values.insert(key_vel, node_list[i].vel)
 
-        #% start/end priors
+        # Take into account the starting position for current iteration
         if i == problem.cur_planner_st_id:
             graph.push_back(
                 PriorFactorVector(
@@ -550,33 +546,40 @@ def get_gtsam_graph(node_list, problem):
                 )
             )
 
+        # Take into account the dynamics
         if problem.vehicle_dynamics:
             graph.add(
                 VehicleDynamicsFactorVector(key_pos, key_vel, problem.vehicle_model)
             )
 
-        vel_limits = np.asarray([3.0, 3.0, 0.6]) #TODO: Move to hyperparams
+        vel_limits = np.asarray([3.0, 3.0, 0.6])  # TODO: Move to hyperparams
         tresh = 1.0
 
+        # Take into account the velocity limit
         if problem.use_vel_limit:
             graph.push_back(
                 VelocityLimitFactorVector(
-                        key_vel,problem.vel_limit_model, vel_limits, tresh*np.ones(problem.num_dof)
-                    )
+                    key_vel,
+                    problem.vel_limit_model,
+                    vel_limits,
+                    tresh * np.ones(problem.num_dof),
                 )
+            )
 
         if i != problem.cur_planner_st_id:
-
+            # Take into account the distance from goal
             graph.push_back(
                 PriorFactorVector(key_pos, problem.end_conf, problem.pose_fix_model)
             )
 
             node_list[i].goal_factor_cost = graph.size() - 1
 
+            # Take into account the difference between current velocity and the one in goal state
             graph.push_back(
                 PriorFactorVector(key_vel, problem.end_vel, problem.vel_fix_model)
             )
-            #% cost factor
+
+            # Take into account the distance from obstacles in node
             graph.push_back(
                 problem.obstacle_factor_function(
                     key_pos,
@@ -589,8 +592,7 @@ def get_gtsam_graph(node_list, problem):
 
             node_list[i].gt_graph_ob_id = graph.size() - 1
 
-        # add edges for each node
-
+        # Connect nodes with costs
         for neigh_id in node_list[i].neighbours:
             key_pos1 = symbol(ord("x"), i)
             key_pos2 = symbol(ord("x"), neigh_id)
@@ -609,7 +611,7 @@ def get_gtsam_graph(node_list, problem):
             )
             node_list[i].neighbours[neigh_id].append(graph.size() - 1)
 
-            #% GP cost factor
+            # % GP cost factor
             if problem.use_GP_inter and problem.inter_step > 0:
                 for j in range(1, problem.inter_step + 1):
                     tau = j * (problem.delta_t / float(problem.inter_step + 1))
@@ -668,7 +670,6 @@ class PlannerRRT(PlannerBase):
         super(PlannerRRT, self).__init__(result, gtsam_graph, planner_graph)
 
     def get_shortest_path(self, start_id, goal_pose):
-
         start_dept = self.planner_graph[start_id].depth
         terminal_node_ids = []
         terminal_node_costs = []
@@ -684,10 +685,10 @@ class PlannerRRT(PlannerBase):
             if not self.planner_graph[cur_id].neighbours:
                 terminal_node_ids.append(cur_id)
 
-                #cost = cur_cost / (self.planner_graph[cur_id].depth - start_dept) ** 2
-                cost = cur_cost / abs(self.planner_graph[cur_id].depth - start_dept)
-                # cost += (np.linalg.norm(self.planner_graph[cur_id].pose - goal_pose))**2
-                # cost += problem.costco_goal_scaling* np.linalg.norm(self.planner_graph[cur_id].pose - goal_pose)
+                cost = cur_cost / (self.planner_graph[cur_id].depth - start_dept) ** 2
+                cost += (
+                    np.linalg.norm(self.planner_graph[cur_id].pose - goal_pose)
+                ) ** 2
                 terminal_node_costs.append(cost)
 
             for neigh_id in self.planner_graph[cur_id].neighbours:
@@ -712,10 +713,7 @@ class PlannerRRT(PlannerBase):
         path.reverse()
         return path, next_planner_st_id
 
-
-
     def get_shortest_path_and_vels(self, start_id, goal_pose, problem):
-
         start_dept = self.planner_graph[start_id].depth
         terminal_node_ids = []
         terminal_node_costs = []
@@ -734,7 +732,7 @@ class PlannerRRT(PlannerBase):
                 cost = cur_cost / abs(self.planner_graph[cur_id].depth - start_dept)
                 # cost += problem.costco_goal_scaling* np.linalg.norm(self.planner_graph[cur_id].pose - goal_pose)
 
-                #cost += self.get_factor_error(self.planner_graph[cur_id].goal_factor_cost)
+                # cost += self.get_factor_error(self.planner_graph[cur_id].goal_factor_cost)
                 terminal_node_costs.append(cost)
 
             for neigh_id in self.planner_graph[cur_id].neighbours:
@@ -764,10 +762,20 @@ class PlannerRRT(PlannerBase):
         vels.reverse()
         return path, vels, next_planner_st_id
 
+
 import cv2
 
 
 def rrt_chain(start_conf, goal_conf, dataset, problem, plot_mode="debug"):
+    """
+    Run the algorithm based on RRT (I Guess?)
+
+    @param start_conf Starting configuration as an np.ndarray
+    @param goal_cong The goal conficuration as an np.ndarray; imensions should match with start_conf
+    @param dataset ???
+    @param problem A structure for all the problem-specific parameters
+    @param plot_mode Either "debug", "rich" or "suppressed"; Warning: "rich" mode makes shit run very slowly
+    """
 
     random_noise = Random()
     random_noise.seed(problem.seed_val + 1)
@@ -787,7 +795,9 @@ def rrt_chain(start_conf, goal_conf, dataset, problem, plot_mode="debug"):
     problem.sdf = PlanarSDF(origin_point2, temp_dataset.cell_size, field)
 
     # Start state validity
-    if in_collision(start_conf, problem.radius, field, temp_dataset):  # diameter of the robot
+    if in_collision(
+        start_conf, problem.radius, field, temp_dataset
+    ):  # diameter of the robot
         return test_status.INVALIDSTART, np.inf, np.inf, np.inf, np.inf, [], np.inf
 
     planner_graph = get_rrt_planner_graph(problem)
@@ -805,7 +815,7 @@ def rrt_chain(start_conf, goal_conf, dataset, problem, plot_mode="debug"):
         plot_iteration = 0
         figure = plt.figure(0, dpi=300)
     elif plot_mode == "debug":
-        #figure = plt.figure(0)
+        # figure = plt.figure(0)
         figure = plt.figure(0, dpi=300)
     if plot_mode == "debug" or plot_mode == "rich":
         figure.clf()
@@ -818,7 +828,10 @@ def rrt_chain(start_conf, goal_conf, dataset, problem, plot_mode="debug"):
 
     path_points = []
     path_vels = []
-    while np.linalg.norm(curstate[:2] - problem.end_conf[:2]) > problem.goal_region_threshold:
+    while (
+        np.linalg.norm(curstate[:2] - problem.end_conf[:2])
+        > problem.goal_region_threshold
+    ):
         prev_node = copy.deepcopy(planner_graph[cur_planner_st_id])
         loop_start_time = time.time()
         path_points.append(planner_graph[cur_planner_st_id].pose)
@@ -853,18 +866,17 @@ def rrt_chain(start_conf, goal_conf, dataset, problem, plot_mode="debug"):
         cur_planner_st_id = next_planner_st_id  # this is implied at the start
 
         if problem.use_noise:
-
             # add execution noise
             rand_temp = [random_noise.random() for i in range(problem.num_dof)]
-            planner_graph[
-                cur_planner_st_id
-            ].pose += problem.action_noise * np.asarray(rand_temp)
+            planner_graph[cur_planner_st_id].pose += problem.action_noise * np.asarray(
+                rand_temp
+            )
 
             # add measurement noise
             rand_temp = [random_noise.random() for i in range(problem.num_dof)]
-            planner_graph[
-                cur_planner_st_id
-            ].pose += problem.sensor_noise * np.asarray(rand_temp)
+            planner_graph[cur_planner_st_id].pose += problem.sensor_noise * np.asarray(
+                rand_temp
+            )
 
         problem.cur_planner_st_id = cur_planner_st_id
         problem.start_conf = planner_graph[cur_planner_st_id].pose
@@ -904,9 +916,16 @@ def rrt_chain(start_conf, goal_conf, dataset, problem, plot_mode="debug"):
         if plot_mode == "rich":
             x = [point[0] for point in path_points]
             y = [point[1] for point in path_points]
-            print("Iteration Num: ", iterations, "Time:", iterations*problem.delta_t, 
-                  "curstate:", planner_graph[cur_planner_st_id].pose,
-                  "curvel:", planner_graph[cur_planner_st_id].vel,  )
+            print(
+                "Iteration Num: ",
+                iterations,
+                "Time:",
+                iterations * problem.delta_t,
+                "curstate:",
+                planner_graph[cur_planner_st_id].pose,
+                "curvel:",
+                planner_graph[cur_planner_st_id].vel,
+            )
             interpolated_states = get_interpolated_points(
                 prev_node, planner_graph[cur_planner_st_id], problem
             )
@@ -933,17 +952,19 @@ def rrt_chain(start_conf, goal_conf, dataset, problem, plot_mode="debug"):
                     )
                 )
                 axis.tick_params(
-                axis='x',          # changes apply to the x-axis
-                which='both',      # both major and minor ticks are affected
-                bottom=False,      # ticks along the bottom edge are off
-                top=False,         # ticks along the top edge are off
-                labelbottom=False) # labels along the bottom edge are off
+                    axis="x",  # changes apply to the x-axis
+                    which="both",  # both major and minor ticks are affected
+                    bottom=False,  # ticks along the bottom edge are off
+                    top=False,  # ticks along the top edge are off
+                    labelbottom=False,
+                )  # labels along the bottom edge are off
                 axis.tick_params(
-                axis='y',          # changes apply to the x-axis
-                which='both',      # both major and minor ticks are affected
-                left=False,      # ticks along the bottom edge are off
-                right=False,         # ticks along the top edge are off
-                labelbottom=False) # labels along the bottom edge are off
+                    axis="y",  # changes apply to the x-axis
+                    which="both",  # both major and minor ticks are affected
+                    left=False,  # ticks along the bottom edge are off
+                    right=False,  # ticks along the top edge are off
+                    labelbottom=False,
+                )  # labels along the bottom edge are off
 
                 # Turn off tick labels
                 axis.set_yticklabels([])
@@ -988,33 +1009,38 @@ def rrt_chain(start_conf, goal_conf, dataset, problem, plot_mode="debug"):
             field = signedDistanceField2D(temp_dataset.map, temp_dataset.cell_size)
 
             axis.cla()
-            axis.set_title(
-                    "JIST: {:5.2f} sec".format(
-                        problem.delta_t * iterations
-                    )
-            )
+            axis.set_title("JIST: {:5.2f} sec".format(problem.delta_t * iterations))
             axis.tick_params(
-            axis='x',          # changes apply to the x-axis
-            which='both',      # both major and minor ticks are affected
-            bottom=False,      # ticks along the bottom edge are off
-            top=False,         # ticks along the top edge are off
-            labelbottom=False) # labels along the bottom edge are off
+                axis="x",  # changes apply to the x-axis
+                which="both",  # both major and minor ticks are affected
+                bottom=False,  # ticks along the bottom edge are off
+                top=False,  # ticks along the top edge are off
+                labelbottom=False,
+            )  # labels along the bottom edge are off
             axis.tick_params(
-            axis='y',          # changes apply to the x-axis
-            which='both',      # both major and minor ticks are affected
-            left=False,      # ticks along the bottom edge are off
-            right=False,         # ticks along the top edge are off
-            labelbottom=False) # labels along the bottom edge are off
+                axis="y",  # changes apply to the x-axis
+                which="both",  # both major and minor ticks are affected
+                left=False,  # ticks along the bottom edge are off
+                right=False,  # ticks along the top edge are off
+                labelbottom=False,
+            )  # labels along the bottom edge are off
 
             # Turn off tick labels
             axis.set_yticklabels([])
             axis.set_xticklabels([])
-            print("Iteration Num: ", iterations, "Time:", iterations*problem.delta_t, 
-                  "curstate:", planner_graph[cur_planner_st_id].pose,
-                  "curvel:", planner_graph[cur_planner_st_id].vel,  )
+            print(
+                "Iteration Num: ",
+                iterations,
+                "Time:",
+                iterations * problem.delta_t,
+                "curstate:",
+                planner_graph[cur_planner_st_id].pose,
+                "curvel:",
+                planner_graph[cur_planner_st_id].vel,
+            )
 
             plot_graph(planner_graph, axis)
-            plotPointRobot2D(figure, axis, problem.gpmp_robot, curstate)
+            plotPointRobot2D_theta(figure, axis, problem.gpmp_robot, curstate)
             plot2dMap(axis, dataset)
 
             axis.imshow(
@@ -1036,7 +1062,7 @@ def rrt_chain(start_conf, goal_conf, dataset, problem, plot_mode="debug"):
 
             axis.plot(start_conf[0], start_conf[1], "rx", markersize=14)
             axis.plot(goal_conf[0], goal_conf[1], "gx", markersize=14)
-            figure.savefig('costco_' + str(iterations) + '.png', dpi=figure.dpi)
+            figure.savefig("costco_" + str(iterations) + ".png", dpi=figure.dpi)
             plt.pause(problem.pause_time)
 
         elif plot_mode == "suppress":
@@ -1050,30 +1076,31 @@ def rrt_chain(start_conf, goal_conf, dataset, problem, plot_mode="debug"):
             field = signedDistanceField2D(temp_dataset.map, temp_dataset.cell_size)
 
         else:
-            raise ValueError('Invalid plot_mode')
+            raise ValueError("Invalid plot_mode")
 
         origin_point2 = Point2(temp_dataset.origin_x, temp_dataset.origin_y)
         problem.sdf = PlanarSDF(origin_point2, temp_dataset.cell_size, field)
 
         iterations += 1
-        
+
         normalized_distance = distance / init_distance
 
         # Collision check
-        if in_collision(curstate, problem.radius, field, temp_dataset):  # diameter of the robot
+        if in_collision(
+            curstate, problem.radius, field, temp_dataset
+        ):  # diameter of the robot
             return (
-                test_status.COLLISION, 
+                test_status.COLLISION,
                 iterations,
                 optimizer_time,
                 total_time,
                 normalized_distance,
                 path_vels,
-                np.linalg.norm(curstate[:2]- goal_conf[:2]),
+                np.linalg.norm(curstate[:2] - goal_conf[:2]),
             )
 
         # Time out check
         if time.time() - prog_start_time > problem.time_out_time:
-
             return (
                 test_status.TIMEOUT,
                 iterations,
@@ -1081,7 +1108,7 @@ def rrt_chain(start_conf, goal_conf, dataset, problem, plot_mode="debug"):
                 total_time,
                 normalized_distance,
                 path_vels,
-                np.linalg.norm(curstate[:2]- goal_conf[:2])
+                np.linalg.norm(curstate[:2] - goal_conf[:2]),
             )
 
     return (
@@ -1091,8 +1118,5 @@ def rrt_chain(start_conf, goal_conf, dataset, problem, plot_mode="debug"):
         total_time,
         normalized_distance,
         path_vels,
-        np.linalg.norm(curstate[:2]- goal_conf[:2])
+        np.linalg.norm(curstate[:2] - goal_conf[:2]),
     )
-
-
-

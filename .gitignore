@@ -1,3 +1,11 @@
+# ------- IDE Files --------
+.vscode/
+.idea/
+ 
+# -------- Anything python-related --------
+__pycache__/
+
 results/
 multirun/
 ablation_studies/
+*.pyc

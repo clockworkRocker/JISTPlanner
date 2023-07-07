@@ -38,7 +38,6 @@ def random_number(min_val, max_val):
 
 
 def get_center(x, y, dataset):
-
     center = (
         np.asarray([y - dataset.origin_y, x - dataset.origin_x]) / dataset.cell_size
     )
@@ -46,32 +45,37 @@ def get_center(x, y, dataset):
 
 
 def get_dim(w, h, dataset):
-
     return np.asarray([h, w]) / dataset.cell_size
 
 
 def add_obstacle(
     position, size, map, landmarks=None, origin_x=None, origin_y=None, cell_size=None
 ):
-
     half_size_row = int(math.floor((size[0] - 1) / 2))
     half_size_col = int(math.floor((size[1] - 1) / 2))
 
     # occupency grid. here map is assumed to be numpy array
 
     temp = map[
-        max(0, position[0] - half_size_row - 1) : min(map.shape[0],position[0] + half_size_row),
-        max(0, position[1] - half_size_col - 1) : min(map.shape[1],position[1] + half_size_col),
+        max(0, position[0] - half_size_row - 1) : min(
+            map.shape[0], position[0] + half_size_row
+        ),
+        max(0, position[1] - half_size_col - 1) : min(
+            map.shape[1], position[1] + half_size_col
+        ),
     ]
 
     map[
-        max(0, position[0] - half_size_row - 1) :min(map.shape[0], position[0] + half_size_row),
-        max(0, position[1] - half_size_col - 1) :min(map.shape[1], position[1] + half_size_col),
+        max(0, position[0] - half_size_row - 1) : min(
+            map.shape[0], position[0] + half_size_row
+        ),
+        max(0, position[1] - half_size_col - 1) : min(
+            map.shape[1], position[1] + half_size_col
+        ),
     ] = np.ones(temp.shape)
 
     # landmarks
     if landmarks is not None and origin_x is not None and origin_y is not None:
-
         raise NotImplementedError
 
     return map
@@ -207,7 +211,6 @@ class Patrol2Ddataset(object):
         origin_y=0.0,
         cell_size=0.1,
     ):
-
         self.dataset = Dataset()
         self.dataset.cols = cols
         self.dataset.rows = rows
@@ -226,8 +229,13 @@ class Patrol2Ddataset(object):
             origin_y + cell_size * rows,
         ]
 
-    def init_obstacles(self, seed_val=None, obstacle_num=100, vel_limit=0.8,  acc_limit=None,):
-
+    def init_obstacles(
+        self,
+        seed_val=None,
+        obstacle_num=100,
+        vel_limit=0.8,
+        acc_limit=None,
+    ):
         if seed_val is None:
             seed_val = 0
         dataset_random.seed(seed_val)
@@ -256,7 +264,7 @@ class Patrol2Ddataset(object):
             )
         )
         self.dynamic_obstacles[0].v_y = 0.0
-        self.dynamic_obstacles[0].v_x = vel_limit# * (2.0/3.0)
+        self.dynamic_obstacles[0].v_x = vel_limit  # * (2.0/3.0)
 
         if obstacle_num == 2:
             self.dynamic_obstacles.append(
@@ -284,7 +292,6 @@ class Patrol2Ddataset(object):
         return obs
 
     def simulate(self, dt):
-
         for obs in self.dynamic_obstacles:
             obs.x += dt * obs.v_x
             obs.y += dt * obs.v_y
@@ -296,7 +303,6 @@ class Patrol2Ddataset(object):
                 obs.v_y *= -1
 
     def get_dataset(self, pose=None, map_size=None):  # size in meters
-
         self.dataset.map = np.zeros((self.dataset.rows, self.dataset.cols))
 
         for obs in self.static_obstacles:
@@ -361,8 +367,6 @@ class Patrol2Ddataset(object):
         temp_dataset.cols = temp_dataset.map.shape[1]
         return temp_dataset
 
-    
-
 
 class Dynamic2Ddataset(object):
     # keep track of objets, and their velocity.
@@ -375,13 +379,12 @@ class Dynamic2Ddataset(object):
 
     def __init__(
         self,
-        rows=900,
-        cols=1200,
+        rows=90,
+        cols=90,
         origin_x=0.0,
         origin_y=0.0,
-        cell_size=0.1,
+        cell_size=1,
     ):
-
         self.dataset = Dataset()
         self.dataset.cols = cols
         self.dataset.rows = rows
@@ -408,17 +411,22 @@ class Dynamic2Ddataset(object):
 
         self.uniform_grid = False
 
-    def init_obstacles(self, seed_val=None, obstacle_num=100, vel_limit=None,  acc_limit=None, 
-                        start=None, goal=None):
-
-
+    def init_obstacles(
+        self,
+        seed_val=None,
+        obstacle_num=100,
+        vel_limit=None,
+        acc_limit=None,
+        start=None,
+        goal=None,
+    ):
         if obstacle_num == -1:
             self.uniform_grid = True
 
             x = self.bounds[0]
-            while x < self. bounds[1]:
+            while x < self.bounds[1]:
                 y = self.bounds[2]
-                while  y < self.bounds[3]:
+                while y < self.bounds[3]:
                     obs = Obstacle()
                     obs.x = x
                     obs.y = y
@@ -427,18 +435,22 @@ class Dynamic2Ddataset(object):
                     y += 15.0
 
                     if goal is not None:
-                        if np.linalg.norm(np.array([obs.x-goal[0], obs.y-goal[1]])) < self.obs_dist:
+                        if (
+                            np.linalg.norm(np.array([obs.x - goal[0], obs.y - goal[1]]))
+                            < self.obs_dist
+                        ):
                             continue
                     if start is not None:
-                        if np.linalg.norm(np.array([obs.x-start[0], obs.y-start[1]])) < self.obs_dist:
+                        if (
+                            np.linalg.norm(
+                                np.array([obs.x - start[0], obs.y - start[1]])
+                            )
+                            < self.obs_dist
+                        ):
                             continue
                     self.obstacles.append(obs)
                 x += 15.0
             return
-
-
-
-
 
         if start is not None:
             self.start = start
@@ -466,12 +478,18 @@ class Dynamic2Ddataset(object):
             obs = Obstacle()
             obs.x = random_number(self.bounds[0], self.bounds[1])
             obs.y = random_number(self.bounds[2], self.bounds[3])
-            
+
             if goal is not None:
-                if np.linalg.norm(np.array([obs.x-goal[0], obs.y-goal[1]])) < self.obs_dist:
+                if (
+                    np.linalg.norm(np.array([obs.x - goal[0], obs.y - goal[1]]))
+                    < self.obs_dist
+                ):
                     continue
             if start is not None:
-                if np.linalg.norm(np.array([obs.x-start[0], obs.y-start[1]])) < self.obs_dist:
+                if (
+                    np.linalg.norm(np.array([obs.x - start[0], obs.y - start[1]]))
+                    < self.obs_dist
+                ):
                     continue
 
             obs.v_x = random_number(-1 * self.obs_velocity, self.obs_velocity)
@@ -484,12 +502,10 @@ class Dynamic2Ddataset(object):
             # print('bounds', self.bounds, self.obs_size)
 
     def simulate(self, dt):
-
         if self.uniform_grid:
             return
 
         for obs in self.obstacles:
-
             # Set accelerations
             if random_number(0.0, 1.0) > 0.5:
                 obs.a_x += self.acc_dt
@@ -510,10 +526,8 @@ class Dynamic2Ddataset(object):
             obs.v_x += dt * obs.a_x
             obs.v_y += dt * obs.a_y
 
-
             obs.v_x = min(obs.v_x, self.obs_velocity)
             obs.v_x = max(obs.v_x, -1 * self.obs_velocity)
-
 
             obs.v_y = min(obs.v_y, self.obs_velocity)
             obs.v_y = max(obs.v_y, -1 * self.obs_velocity)
@@ -522,15 +536,20 @@ class Dynamic2Ddataset(object):
             obs.y += dt * obs.v_y
 
             if self.goal is not None:
-                if np.linalg.norm(np.array([obs.x-self.goal[0], obs.y-self.goal[1]])) < self.obs_dist:
+                if (
+                    np.linalg.norm(
+                        np.array([obs.x - self.goal[0], obs.y - self.goal[1]])
+                    )
+                    < self.obs_dist
+                ):
                     # bounce off the circle around goal
-                    v1 = np.array([obs.x-self.goal[0], obs.y-self.goal[1]])
-                    v1 = v1/np.linalg.norm(v1)
+                    v1 = np.array([obs.x - self.goal[0], obs.y - self.goal[1]])
+                    v1 = v1 / np.linalg.norm(v1)
 
                     v2 = -1 * np.array([obs.v_x, obs.v_y])
-                    v2 = v2/np.linalg.norm(v2)
+                    v2 = v2 / np.linalg.norm(v2)
 
-                    theta = math.acos(np.linalg.norm( np.dot(v1, v2)))
+                    theta = math.acos(np.linalg.norm(np.dot(v1, v2)))
 
                     alpha = math.atan2(obs.v_y, obs.v_x)
                     beta = math.atan2(obs.y - self.goal[1], obs.x - self.goal[0])
@@ -539,24 +558,34 @@ class Dynamic2Ddataset(object):
 
                     angle = beta - alpha - theta
 
-                    rot_mat = np.array([[math.cos(angle), -1* math.sin(angle)], [ math.sin(angle), math.cos(angle)]])
+                    rot_mat = np.array(
+                        [
+                            [math.cos(angle), -1 * math.sin(angle)],
+                            [math.sin(angle), math.cos(angle)],
+                        ]
+                    )
 
-                    new_vels =   np.matmul(np.asarray([obs.v_x, obs.v_y]) , rot_mat.T)
+                    new_vels = np.matmul(np.asarray([obs.v_x, obs.v_y]), rot_mat.T)
 
                     obs.v_x = new_vels[0]
                     obs.v_y = new_vels[1]
 
             if self.start is not None:
-                if np.linalg.norm(np.array([obs.x-self.start[0], obs.y-self.start[1]])) < self.obs_dist:
+                if (
+                    np.linalg.norm(
+                        np.array([obs.x - self.start[0], obs.y - self.start[1]])
+                    )
+                    < self.obs_dist
+                ):
                     # bounce off the circle around start
 
-                    v1 = np.array([obs.x-self.start[0], obs.y-self.start[1]])
-                    v1 = v1/np.linalg.norm(v1)
+                    v1 = np.array([obs.x - self.start[0], obs.y - self.start[1]])
+                    v1 = v1 / np.linalg.norm(v1)
 
                     v2 = -1 * np.array([obs.v_x, obs.v_y])
-                    v2 = v2/np.linalg.norm(v2)
+                    v2 = v2 / np.linalg.norm(v2)
 
-                    theta = math.acos(np.linalg.norm( np.dot(v1, v2)))
+                    theta = math.acos(np.linalg.norm(np.dot(v1, v2)))
 
                     alpha = math.atan2(obs.v_y, obs.v_x)
                     beta = math.atan2(obs.y - self.start[1], obs.x - self.start[0])
@@ -565,13 +594,17 @@ class Dynamic2Ddataset(object):
 
                     angle = beta - alpha - theta
 
-                    rot_mat = np.array([[math.cos(angle), -1* math.sin(angle)], [ math.sin(angle), math.cos(angle)]])
+                    rot_mat = np.array(
+                        [
+                            [math.cos(angle), -1 * math.sin(angle)],
+                            [math.sin(angle), math.cos(angle)],
+                        ]
+                    )
 
-                    new_vels =   np.matmul(np.asarray([obs.v_x, obs.v_y]) , rot_mat.T)
+                    new_vels = np.matmul(np.asarray([obs.v_x, obs.v_y]), rot_mat.T)
 
                     obs.v_x = new_vels[0]
                     obs.v_y = new_vels[1]
-
 
             # change velocities
             if obs.x <= self.bounds[0] or obs.x >= self.bounds[1]:
@@ -580,7 +613,6 @@ class Dynamic2Ddataset(object):
                 obs.v_y *= -1
 
     def get_dataset(self, pose=None, map_size=None):  # size in meters
-
         self.dataset.map = np.zeros((self.dataset.rows, self.dataset.cols))
 
         for obs in self.obstacles:
@@ -637,4 +669,3 @@ class Dynamic2Ddataset(object):
         temp_dataset.rows = temp_dataset.map.shape[0]
         temp_dataset.cols = temp_dataset.map.shape[1]
         return temp_dataset
-
