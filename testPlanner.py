@@ -33,11 +33,10 @@ def main():
         "dynamics_factor": gp.VehicleDynamicsFactorVector,
         "movement_factor": gp.GaussianProcessPriorLinear,
         "obstacle_factor": gp.ObstaclePlanarSDFFactorPointRobot,
-        "avg_vel": 0.3,
+        "avg_vel": 1.5
     }
 
-    dataset = Dynamic2Ddataset()
-    planner = PlottingPlanner(robot, sdf_side=15)
+    planner = PlottingPlanner(robot, sdf_side=100, time_step = 0.1)
     start = np.asarray([45.0, 80.0, 0.0])
     target = np.asarray([45.0, 10.0, np.pi / 2])
 

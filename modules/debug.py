@@ -43,8 +43,8 @@ class PlottingPlanner(JISTPlanner):
 
         return whatever
 
-    def __plot_occupancy(self, axis):
-        pose = self.nodes[self.current_node_id].pose
+    def __plot_occupancy(self, axis, start):
+        pose = start
         axis.imshow(
             self.pretty_field,
             extent=[
@@ -84,12 +84,12 @@ class PlottingPlanner(JISTPlanner):
         pu.plotPointRobot2D_theta(
             figure, axis, self.robot["model"], self.nodes[self.current_node_id].pose
         )
-        self.__plot_occupancy(axis)
+        self.__plot_occupancy(axis, start)
         self.__plot_path(path, axis)
         axis.plot(start[0], start[1], "gx", markersize=10)
         axis.plot(target[0], target[1], "rx", markersize=10)
         figure.show()
-        plt.pause(self.time_step * 25)
+        plt.pause(self.time_step)
 
     def plan(self, start, target, target_vels, grid, grid_grain, num_steps):
         step = 0
@@ -106,9 +106,17 @@ class PlottingPlanner(JISTPlanner):
         self.__plot(figure, axis, start, target, path, step)
 
         while step < num_steps:
+            print(
+                "Step:", step, 
+                "Position:", self.nodes[self.current_node_id].pose, 
+                "Velocity: ", self.nodes[self.current_node_id].vels)
             self._build_factors(start, target, target_vels)
+            self._make_values()
             self._optimize_graph()
+            self.__plot(figure, axis, start, target, path, step)
+
             next_node = self._next_best_node(target)
+            
             controls.append(self.nodes[next_node].vels)
             path.append(self.nodes[next_node].pose)
 
