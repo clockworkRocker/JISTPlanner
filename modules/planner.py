@@ -27,6 +27,7 @@ class JISTPlanner(object):
         epsilon_dist = 4.0
         sigma_goal = 2.0
         sigma_goal_costco = 4.0
+        sigma_diff_control = 1e-4
         sigma_start = 0.0001
         sigma_vel_limit = 0.001
         use_trustregion_opt = False
@@ -89,6 +90,11 @@ class JISTPlanner(object):
             kwargs["sigma_vel_limit"]
             if "sigma_vel_limit" in kwargs
             else JISTPlanner.Defaults.sigma_vel_limit
+        )
+        self.sigma_diff_control = (
+            kwargs["sigma_diff_control"]
+            if "sigma_diff_control" in kwargs
+            else JISTPlanner.Defaults.sigma_diff_control
         )
         self.use_trustregion_opt = (
             kwargs["use_trustregion_opt"]
@@ -190,24 +196,34 @@ class JISTPlanner(object):
         self.sdf = gp.PlanarSDF(origin_point, cell_size, field)
 
     def _make_graph(self, start):
-        n_id = self.__get_new_id()
-        new_node = Node(
-            n_id, start, np.ones(self.robot["num_controls"]) * self.robot["avg_vel"]
-        )
-        self.nodes = {n_id: new_node}
+        if len(self.nodes) == 0:
+            n_id = self.__get_new_id()
+            new_node = Node(
+                n_id, start, np.ones(self.robot["num_controls"]) * self.robot["avg_vel"]
+            )
+            self.nodes = {n_id: new_node}
+            self.current_node_id = n_id
         self._grow_graph()
+
+    def _make_values(self):
+        self.values = gs.Values()
+        for id in self.nodes:
+            pose_key = gs.symbol(ord("x"), id)
+            vels_key = gs.symbol(ord("v"), id)
+            self.values.insert(pose_key, self.nodes[id].pose)
+            self.values.insert(vels_key, self.nodes[id].vels)
 
     # ---------------- Algorithm steps ----------------
     def _grow_graph(self):
         """Use RRT to sample new nodes"""
 
-        closest_dist = np.inf
-        closest_id = -1
-
         point = np.zeros(self.robot["num_dof"])
+        pose = self.nodes[self.current_node_id].pose
         for _ in range(len(self.nodes), self.node_budget):
+            closest_dist = np.inf
+            closest_id = -1
             for i, limit in enumerate(self.robot["dof_limits"]):
-                point[i] = np.random.uniform(limit[0], limit[1])
+                point[i] = pose[i] + np.random.uniform(limit[0], limit[1])
 
             for id in self.nodes:
                 dist = np.linalg.norm(point - self.nodes[id].pose)
@@ -245,9 +261,9 @@ class JISTPlanner(object):
                         vels_key, self.nodes[id].vels, self.start_vels_cost_model
                     )
                 )
-            # Robot dynamics
+            # Differential control constraint
             self.factors.push_back(
-                self.robot["dynamics_factor"](pose_key, vels_key, self.cost_sigma)
+                self.robot["dynamics_factor"](pose_key, vels_key, self.sigma_diff_control)
             )
             # Velocity limits
             self.factors.push_back(
@@ -384,14 +400,14 @@ class JISTPlanner(object):
         return cur_id
 
     def _update_goal_models(self, start, target):
-        self.sigma_goal_costco *= np.linalg.norm(
+        tempsigma = self.sigma_goal_costco * (1 - (1 / (0.25 * np.linalg.norm(
             target - self.nodes[self.current_node_id].pose
-        ) / np.linalg.norm(target - start)
+        ) + 1)))
         self.pose_cost_model = gs.noiseModel_Isotropic.Sigma(
-            self.robot["num_dof"], self.sigma_goal_costco
+            self.robot["num_dof"], tempsigma
         )
         self.vels_cost_model = gs.noiseModel_Isotropic.Sigma(
-            self.robot["num_controls"], self.sigma_goal_costco
+            self.robot["num_controls"], tempsigma
         )
 
     # ---------------- Interface ----------------
@@ -402,7 +418,6 @@ class JISTPlanner(object):
 
         self._make_sdf(grid, grid_grain, start)
         self._make_graph(start)
-        self.current_node_id = 0
 
         while step < num_steps:
             self._build_factors(start, target, target_vels)

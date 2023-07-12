@@ -1,6 +1,8 @@
 from planner import JISTPlanner
+import numpy as np
 import gtsam as gs
 import gpmp2 as gp
+from cv2 import flip
 import matplotlib.pyplot as plt
 import matplotlib.collections as mc
 import utils.plot_utils as pu
@@ -46,14 +48,15 @@ class PlottingPlanner(JISTPlanner):
     def __plot_occupancy(self, axis, start):
         pose = start
         axis.imshow(
-            self.pretty_field,
+            flip(self.pretty_field, flipCode=0),
             extent=[
-                pose[0] - self.sdf_side / 2,
-                pose[0] + self.sdf_side / 2,
-                pose[1] - self.sdf_side / 2,
-                pose[1] + self.sdf_side / 2,
+                0, self.sdf_side, 0, self.sdf_side
+                # pose[0] - self.sdf_side / 2,
+                # pose[0] + self.sdf_side / 2,
+                # pose[1] - self.sdf_side / 2,
+                # pose[1] + self.sdf_side / 2,
             ],
-            alpha=0.3,
+            alpha=0.5,
         )
 
     def __plot(self, figure, axis, start, target, path, step):
@@ -61,23 +64,23 @@ class PlottingPlanner(JISTPlanner):
 
         # ---------------- Plottting params ----------------
         axis.set_title("JIST: {:5.2f} sec".format(self.time_step * step))
-        axis.tick_params(
-            axis="x",  # changes apply to the x-axis
-            which="both",  # both major and minor ticks are affected
-            bottom=False,  # ticks along the bottom edge are off
-            top=False,  # ticks along the top edge are off
-            labelbottom=False,
-        )  # labels along the bottom edge are off
-        axis.tick_params(
-            axis="y",  # changes apply to the x-axis
-            which="both",  # both major and minor ticks are affected
-            left=False,  # ticks along the bottom edge are off
-            right=False,  # ticks along the top edge are off
-            labelbottom=False,
-        )  # labels along the bottom edge are off
-        # Turn off tick labels
-        axis.set_yticklabels([])
-        axis.set_xticklabels([])
+        # axis.tick_params(
+        #     axis="x",  # changes apply to the x-axis
+        #     which="both",  # both major and minor ticks are affected
+        #     bottom=False,  # ticks along the bottom edge are off
+        #     top=False,  # ticks along the top edge are off
+        #     labelbottom=False,
+        # )  # labels along the bottom edge are off
+        # axis.tick_params(
+        #     axis="y",  # changes apply to the x-axis
+        #     which="both",  # both major and minor ticks are affected
+        #     left=False,  # ticks along the bottom edge are off
+        #     right=False,  # ticks along the top edge are off
+        #     labelbottom=False,
+        # )  # labels along the bottom edge are off
+        # # Turn off tick labels
+        # axis.set_yticklabels([])
+        # axis.set_xticklabels([])
         # --------------------------------------------------
 
         self.__plot_graph(axis)
@@ -99,21 +102,23 @@ class PlottingPlanner(JISTPlanner):
 
         self._make_sdf(grid, grid_grain, start)
         self._make_graph(start)
-        self.current_node_id = 0
 
         figure = plt.figure(0, dpi=300)
         axis = figure.gca()
         self.__plot(figure, axis, start, target, path, step)
 
-        while step < num_steps:
+        while (
+            np.linalg.norm(target - self.nodes[self.current_node_id].pose) > self.target_region_radius 
+            and step < num_steps
+        ):
             print(
                 "Step:", step, 
                 "Position:", self.nodes[self.current_node_id].pose, 
-                "Velocity: ", self.nodes[self.current_node_id].vels)
+                "Velocity: ", self.nodes[self.current_node_id].vels,
+                )
             self._build_factors(start, target, target_vels)
             self._make_values()
             self._optimize_graph()
-            self.__plot(figure, axis, start, target, path, step)
 
             next_node = self._next_best_node(target)
             

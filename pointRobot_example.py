@@ -16,8 +16,8 @@ def main(hydra_cfg):
     print(hydra_cfg.pretty())
 
     plot_mode = "debug"
-    start_conf = np.asarray([45.0, 80.0, 0.0])  # np.asarray([10, 20, 0])
-    goal_conf = np.asarray([45, 10.0, np.pi / 2])  # np.asarray([20, 40, 0])
+    start_conf = np.asarray([50, 50, 0.0])  # np.asarray([10, 20, 0])
+    goal_conf = np.asarray([0, 0, -3 * np.pi / 4])  # np.asarray([20, 40, 0])
 
     seed_val = hydra_cfg.problem.seed_val
 

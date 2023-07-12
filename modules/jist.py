@@ -314,7 +314,7 @@ def make_problem_from_config(
     # problem.same_state_init = problem_config.same_state_init
     problem.use_prev_graph = problem_config.use_prev_graph
     # problem.window_size = problem_config.node_budget
-    problem.init_fraction_length = problem_config.init_fraction_length
+    # problem.init_fraction_length = problem_config.init_fraction_length
     problem.goal_region_threshold = problem_config.goal_region_threshold
     # problem.connection_threshold = problem_config.connection_threshold
 
@@ -732,7 +732,7 @@ class PlannerRRT(PlannerBase):
                 cost = cur_cost / abs(self.planner_graph[cur_id].depth - start_dept)
                 # cost += problem.costco_goal_scaling* np.linalg.norm(self.planner_graph[cur_id].pose - goal_pose)
 
-                # cost += self.get_factor_error(self.planner_graph[cur_id].goal_factor_cost)
+                cost += self.get_factor_error(self.planner_graph[cur_id].goal_factor_cost)
                 terminal_node_costs.append(cost)
 
             for neigh_id in self.planner_graph[cur_id].neighbours:
@@ -861,7 +861,6 @@ def rrt_chain(start_conf, goal_conf, dataset, problem, plot_mode="debug"):
             cur_planner_st_id, problem.end_conf
         )
         planner_graph = pruned_graph(next_planner_st_id, planner_graph)
-        temp_planner_graph = planner_graph
 
         cur_planner_st_id = next_planner_st_id  # this is implied at the start
 

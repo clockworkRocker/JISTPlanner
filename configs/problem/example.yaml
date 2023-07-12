@@ -11,12 +11,12 @@ problem:
 
   use_theta : True
   seed_val: 0
-  time_out_time: 50
+  time_out_time: 150
 
   #Robot
   radius: 2
   vehicle_dynamics: True
-  vehicle_model: 1
+  vehicle_model: 1e-4
 
   #Noise model
   use_noise: True
@@ -24,8 +24,8 @@ problem:
   action_noise: 0.03
 
   # Core GPMP config
-  use_GP_inter: False
-  delta_t : 0.25
+  use_GP_inter: True
+  delta_t : 0.1
   inter_step: 4
   avg_vel: 0.1
 
@@ -35,12 +35,12 @@ problem:
   epsilon_dist: 4.0
   sigma_goal: 2.0
   sigma_start: 0.0001
-  use_trustregion_opt: True
+  use_trustregion_opt: False
 
   # Common
   use_vel_limit: True
   sigma_vel_limit: 0.001
-  node_budget: 60
+  node_budget: 64
   sdf_side: 40.0
 
   # Receding Horizon specific things
