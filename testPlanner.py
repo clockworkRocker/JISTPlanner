@@ -1,7 +1,10 @@
 import numpy as np
 import gpmp2 as gp
 import gtsam as gs
+
 from modules.debug import PlottingPlanner
+
+# from modules.planner import JISTPlanner
 from modules.datasets.generate2Ddataset import Dynamic2Ddataset
 
 NUM_DOF = 3
@@ -33,24 +36,23 @@ def main():
         "dynamics_factor": gp.VehicleDynamicsFactorVector,
         "movement_factor": gp.GaussianProcessPriorLinear,
         "obstacle_factor": gp.ObstaclePlanarSDFFactorPointRobot,
-        "avg_vel": 0.1
+        "avg_vel": 0.1,
     }
 
     configs = {
-        "sdf_side": 8.,
-        "sdf_step": 8. / 160.,
+        "sdf_side": 8.0,
+        "sdf_step": 8.0 / 160.0,
         "time_step": 0.1,
         "step_multiplier": 0.2,
-
         "epsilon_dist": 0.1,
-        "sigma_goal": 2.,
-        "sigma_goal_costco": 4.
+        "sigma_goal": 2.0,
+        "sigma_goal_costco": 4.0,
     }
 
     planner = PlottingPlanner(robot, **configs)
     start = np.asarray([0.9, 0.9, 0.0])
     target = np.asarray([2.4, 2.5, -3 * np.pi / 4])
-    
+
     dataset = Dynamic2Ddataset(160, 160, cell_size=configs["sdf_step"])
     dataset.init_obstacles(878923, 100)
     map = dataset.get_dataset(start, [configs["sdf_side"], configs["sdf_side"]]).map
@@ -69,17 +71,18 @@ def main():
         1,
         32,
     )
-    while (np.linalg.norm(path[-1] - target) > 0.25):
-        path, result = planner.plan(
-        path[-1],
-        target,
-        np.zeros(NUM_DOF),
-        dataset.get_dataset(start, [configs["sdf_side"], configs["sdf_side"]]).map,
-        1,
-        32,
-    )
-
     print("Controls:", result)
+
+    while np.linalg.norm(path[-1] - target) > 0.25:
+        path, result = planner.plan(
+            path[-1],
+            target,
+            np.zeros(NUM_DOF),
+            dataset.get_dataset(start, [configs["sdf_side"], configs["sdf_side"]]).map,
+            1,
+            32,
+        )
+        print("Controls:", result)
 
 
 if __name__ == "__main__":

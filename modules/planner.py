@@ -5,7 +5,7 @@ from random import Random
 from copy import deepcopy
 from utils.signedDistanceField2D import signedDistanceField2D
 from node import Node
-from Queue import Queue
+from queue import Queue
 
 
 class JISTPlanner(object):
@@ -147,22 +147,22 @@ class JISTPlanner(object):
         self.current_node_id = 0
 
         # Models for factors
-        self.start_pose_cost_model = gs.noiseModel_Isotropic.Sigma(
+        self.start_pose_cost_model = gs.noiseModel.Isotropic.Sigma(
             self.robot["num_dof"], self.sigma_start
         )
-        self.pose_cost_model = gs.noiseModel_Isotropic.Sigma(
+        self.pose_cost_model = gs.noiseModel.Isotropic.Sigma(
             self.robot["num_dof"], self.sigma_goal_costco
         )
-        self.start_vels_cost_model = gs.noiseModel_Isotropic.Sigma(
+        self.start_vels_cost_model = gs.noiseModel.Isotropic.Sigma(
             self.robot["num_controls"], self.sigma_start
         )
-        self.vels_cost_model = gs.noiseModel_Isotropic.Sigma(
+        self.vels_cost_model = gs.noiseModel.Isotropic.Sigma(
             self.robot["num_controls"], self.sigma_goal_costco
         )
-        self.vels_limit_cost_model = gs.noiseModel_Isotropic.Sigma(
+        self.vels_limit_cost_model = gs.noiseModel.Isotropic.Sigma(
             self.robot["num_controls"], self.sigma_vel_limit
         )
-        self.qc_model = gs.noiseModel_Gaussian.Covariance(
+        self.qc_model = gs.noiseModel.Gaussian.Covariance(
             np.identity(self.robot["num_dof"])
         )
 
@@ -208,8 +208,8 @@ class JISTPlanner(object):
     def _make_values(self):
         self.values = gs.Values()
         for id in self.nodes:
-            pose_key = gs.symbol(ord("x"), id)
-            vels_key = gs.symbol(ord("v"), id)
+            pose_key = gs.symbol("x", id)
+            vels_key = gs.symbol("v", id)
             self.values.insert(pose_key, self.nodes[id].pose)
             self.values.insert(vels_key, self.nodes[id].vels)
 
@@ -246,8 +246,8 @@ class JISTPlanner(object):
         self.factors = gs.NonlinearFactorGraph()
 
         for id in self.nodes:
-            pose_key = gs.symbol(ord("x"), id)
-            vels_key = gs.symbol(ord("v"), id)
+            pose_key = gs.symbol("x", id)
+            vels_key = gs.symbol("v", id)
 
             # Start state factors
             if id == self.current_node_id:
@@ -263,7 +263,9 @@ class JISTPlanner(object):
                 )
             # Differential control constraint
             self.factors.push_back(
-                self.robot["dynamics_factor"](pose_key, vels_key, self.sigma_diff_control)
+                self.robot["dynamics_factor"](
+                    pose_key, vels_key, self.sigma_diff_control
+                )
             )
             # Velocity limits
             self.factors.push_back(
@@ -300,8 +302,8 @@ class JISTPlanner(object):
 
             # Cost to neighbours
             for n_id in self.nodes[id].neighbours:
-                n_pose_key = gs.symbol(ord("x"), n_id)
-                n_vels_key = gs.symbol(ord("v"), n_id)
+                n_pose_key = gs.symbol("x", n_id)
+                n_vels_key = gs.symbol("v", n_id)
                 self.factors.push_back(
                     self.robot["movement_factor"](
                         pose_key,
@@ -318,8 +320,8 @@ class JISTPlanner(object):
         # Prepare initial values
         self.values = gs.Values()
         for id in self.nodes:
-            pose_key = gs.symbol(ord("x"), id)
-            vels_key = gs.symbol(ord("v"), id)
+            pose_key = gs.symbol("x", id)
+            vels_key = gs.symbol("v", id)
             self.values.insert(pose_key, self.nodes[id].pose)
             self.values.insert(vels_key, self.nodes[id].vels)
 
@@ -335,8 +337,8 @@ class JISTPlanner(object):
 
         # Update the nodes
         for id in self.nodes:
-            self.nodes[id].pose = self.values.atVector(gs.symbol(ord("x"), id))
-            self.nodes[id].vels = self.values.atVector(gs.symbol(ord("v"), id))
+            self.nodes[id].pose = self.values.atVector(gs.symbol("x", id))
+            self.nodes[id].vels = self.values.atVector(gs.symbol("v", id))
 
     def _prune_graph(self):
         old_nodes = deepcopy(self.nodes)
@@ -400,13 +402,21 @@ class JISTPlanner(object):
         return cur_id
 
     def _update_goal_models(self, start, target):
-        tempsigma = self.sigma_goal_costco * (1 - (1 / (0.25 * np.linalg.norm(
-            target - self.nodes[self.current_node_id].pose
-        ) + 1)))
-        self.pose_cost_model = gs.noiseModel_Isotropic.Sigma(
+        tempsigma = self.sigma_goal_costco * (
+            1
+            - (
+                1
+                / (
+                    0.25
+                    * np.linalg.norm(target - self.nodes[self.current_node_id].pose)
+                    + 1
+                )
+            )
+        )
+        self.pose_cost_model = gs.noiseModel.Isotropic.Sigma(
             self.robot["num_dof"], tempsigma
         )
-        self.vels_cost_model = gs.noiseModel_Isotropic.Sigma(
+        self.vels_cost_model = gs.noiseModel.Isotropic.Sigma(
             self.robot["num_controls"], tempsigma
         )
 
@@ -414,6 +424,7 @@ class JISTPlanner(object):
     def plan(self, start, target, target_vels, grid, grid_grain, num_steps):
         step = 0
         controls = []
+        path = []
         """List of control velocities """
 
         self._make_sdf(grid, grid_grain, start)
@@ -424,6 +435,7 @@ class JISTPlanner(object):
             self._optimize_graph()
             next_node = self._next_best_node(target)
             controls.append(self.nodes[next_node].vels)
+            path.append(self.nodes[self.current_node_id].pose)
 
             self.current_node_id = next_node
             self._prune_graph()
@@ -432,4 +444,4 @@ class JISTPlanner(object):
 
             step += 1
 
-        return controls
+        return path, controls
