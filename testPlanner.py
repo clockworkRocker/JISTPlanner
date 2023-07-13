@@ -52,7 +52,7 @@ def main():
     target = np.asarray([2.4, 2.5, -3 * np.pi / 4])
     
     dataset = Dynamic2Ddataset(160, 160, cell_size=configs["sdf_step"])
-    dataset.init_obstacles(878973, 100)
+    dataset.init_obstacles(878923, 100)
     map = dataset.get_dataset(start, [configs["sdf_side"], configs["sdf_side"]]).map
 
     for i in range(map.shape[1]):
