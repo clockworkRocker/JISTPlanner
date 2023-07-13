@@ -94,13 +94,13 @@ class PlottingPlanner(JISTPlanner):
         figure.show()
         plt.pause(self.time_step)
 
-    def plan(self, start, target, target_vels, grid, grid_grain, num_steps):
+    def plan(self, start, target, target_vels, grid, num_steps):
         step = 0
         controls = []
         path = [start]
         """List of control velocities """
 
-        self._make_sdf(grid, grid_grain, start)
+        self._make_sdf(grid, self.sdf_step, start)
         self._make_graph(start)
 
         figure = plt.figure(0, dpi=300)

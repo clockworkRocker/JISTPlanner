@@ -421,7 +421,30 @@ class JISTPlanner(object):
         )
 
     # ---------------- Interface ----------------
-    def plan(self, start, target, target_vels, grid, grid_grain, num_steps):
+    def plan(self, start, target, target_vels, grid, num_steps):
+        step = 0
+        controls = []
+        """List of control velocities """
+
+        self._make_sdf(grid, self.sdf_step, start)
+        self._make_graph(start)
+
+        while step < num_steps:
+            self._build_factors(start, target, target_vels)
+            self._optimize_graph()
+            next_node = self._next_best_node(target)
+            controls.append(self.nodes[next_node].vels)
+
+            self.current_node_id = next_node
+            self._prune_graph()
+            self._grow_graph()
+            self._update_goal_models(start, target)
+
+            step += 1
+
+        return controls    
+
+    def plan_with_path(self, start, target, target_vels, grid, grid_grain, num_steps):
         step = 0
         controls = []
         path = []
