@@ -68,7 +68,6 @@ def main():
         target,
         np.zeros(NUM_DOF),
         dataset.get_dataset(start, [configs["sdf_side"], configs["sdf_side"]]).map,
-        1,
         32,
     )
     print("Controls:", result)
@@ -79,7 +78,6 @@ def main():
             target,
             np.zeros(NUM_DOF),
             dataset.get_dataset(start, [configs["sdf_side"], configs["sdf_side"]]).map,
-            1,
             32,
         )
         print("Controls:", result)
