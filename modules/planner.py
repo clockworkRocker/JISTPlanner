@@ -44,6 +44,18 @@ class JISTPlanner(object):
         reuse_previous_graph = True
 
     def __init__(self, robot_model, **kwargs):
+        """
+        Parameters
+        ----------
+        robot_model: A dictionary that describes the robot. The following keys must be present:
+            * num_dof - Number of degrees of freedom
+            * num_controls - Usually you want this equal to num_dof
+            * control_limits - A NumPy ndarray with dimension num_dof
+            * model - Object of class derivative from GPMP2::ForwardKinematics
+            * dynamics_factor - A GPMP2 factor that includes movement constraints of the robot (for example, differential steering)
+            * obstacle_factor - A GPMP2 factor that uses the obstacle data
+            * movement_factor - A GPMP2 factor that estimates the cost of moving between two given states
+        """
         self.robot = robot_model
         self.pose_dim = robot_model["num_dof"]
         self.control_dim = robot_model["num_controls"]
@@ -421,7 +433,16 @@ class JISTPlanner(object):
         )
 
     # ---------------- Interface ----------------
-    def plan(self, start, target, target_vels, grid, num_steps):
+    def plan(self, start: np.ndarray, target: np.ndarray, target_vels: np.ndarray, grid: np.ndarray, num_steps: int):
+        """
+        Parameters
+        ----------
+            start: Starting position (dimension should be equal to the number of DOF)
+            target: Target position
+            target_vels: The desired velocities in the target position
+            grid: The occupancy grid (a.k.a. A matrix that represents the obstacle data)
+            num_steps: The number of steps to plan for
+        """
         step = 0
         controls = []
         """List of control velocities """

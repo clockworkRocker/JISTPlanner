@@ -7,38 +7,32 @@ JIST (JoInt Sampling and Trajectory optimization), is a unified approach that le
 
 ## Installation
 
-- Install GTSAM and GPMP2 following the [steps here](../../README.md).
-- Install Hydra 0.11: `pip install hydra-core==0.11`
+- Install GTSAM and GPMP2:
+  ```bash
+  git clone --single-branch https://github.com/borglab/GTSAM.git
+  mkdir GTSAM/build && cd GTSAM/build
+  cmake -DGTSAM_BUILD_PYTHON=ON -DGTSAM_INSTALL_CYTHON_TOOLBOX=ON -DGTSAM_ALLOW_DEPRECATED_SINCE_V43=OFF ..
+  make check # Run unit tests
+  sudo make install # You only need sudo for installation into default location (/usr/local/lib)
+  sudo make python-install
+  ```
+
+  ```
+  git clone --single-branch https://github.com/borglab/GPMP2.git
+  mkdir GPMP2/build && cd GPMP2/build
+  cmake -DGPMP2_INSTALL_PYTHON_TOOLBOX=ON ..
+  make check
+  sudo make install
+  make python-install
+  ```
+
 - Install OpenCV 4.2.0.32: `pip install opencv-python==4.2.0.32`
 
 
 ## Usage
+To run a visual test of JIST run `testPlanner.py`
 
-Run the following commands to visualize JIST in action.
-
-- For Random Forest environment
-  ```python
-  python pointRobot_example.py problem.node_budget=100 problem.seed_val=1 dataset.obstacle_num=40 problem.sdf_side=65.0 dataset.vel_limit=1.5
-  ```
-- For Patrol Guard environment
-  ```python
-  python pointRobot_example_patrol_guard.py problem=example_patrol dataset.vel_limit=1.6 dataset.obstacle_num=2 problem.sdf_side=20
-  ```
-
-
-## Evaluation
-
-To replicate Table 1 results from the paper, run the following commands.
-
-- For Random Forest environment
-  ```python
-  python pointRobot_test.py dataset.vel_limit=1.5 dataset.obstacle_num=80 problem.node_budget=60 problem.sdf_side=60.0
-  ```
-- For Patrol Guard environment
-  ```python
-  python pointRobot_test_patrol_guard.py dataset.vel_limit=1.4 dataset.obstacle_num=2 problem.node_budget=100 problem.sdf_side=60.0 problem=example_patrol dataset=patrol_guard
-  ```
-
+To use JIST in your projects use class `JISTPlanner` defined in module `modules.planner` and its `plan` method.
 
 ## Citation
 
