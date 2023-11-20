@@ -1,11 +1,13 @@
-import numpy as np
-import gtsam as gs
-import gpmp2 as gp
+from queue import Queue
 from random import Random
 from copy import deepcopy
-from utils.signedDistanceField2D import signedDistanceField2D
-from node import Node
-from queue import Queue
+import numpy as np
+
+import gtsam as gs
+import gpmp2 as gp
+
+from JISTPlanner.modules.utils.signedDistanceField2D import signedDistanceField2D
+from JISTPlanner.modules.node import Node
 
 
 class JISTPlanner(object):
@@ -61,91 +63,48 @@ class JISTPlanner(object):
         self.control_dim = robot_model["num_controls"]
 
         # Distance field parameters
-        self.sdf_side = (
-            kwargs["sdf_side"]
-            if "sdf_side" in kwargs
-            else JISTPlanner.Defaults.sdf_side
-        )
-        self.sdf_step = (
-            kwargs["sdf_step"]
-            if "sdf_step" in kwargs
-            else JISTPlanner.Defaults.sdf_step
-        )
+        self.sdf_side = kwargs.pop("sdf_side", JISTPlanner.Defaults.sdf_side)
+        self.sdf_step = kwargs.pop("sdf_step", JISTPlanner.Defaults.sdf_step)
 
         # Params for factors
-        self.cost_sigma = (
-            kwargs["cost_sigma"]
-            if "cost_sigma" in kwargs
-            else JISTPlanner.Defaults.cost_sigma
+        self.cost_sigma = kwargs.pop("cost_sigma", JISTPlanner.Defaults.cost_sigma)
+        self.epsilon_dist = kwargs.pop(
+            "epsilon_dist", JISTPlanner.Defaults.epsilon_dist
         )
-        self.epsilon_dist = (
-            kwargs["epsilon_dist"]
-            if "epsilon_dist" in kwargs
-            else JISTPlanner.Defaults.epsilon_dist
+        self.sigma_goal = kwargs.pop("sigma_goal", JISTPlanner.Defaults.sigma_goal)
+
+        self.sigma_goal_costco = kwargs.pop(
+            "sigma_goal_costco", JISTPlanner.Defaults.sigma_goal_costco
         )
-        self.sigma_goal = (
-            kwargs["sigma_goal"]
-            if "sigma_goal" in kwargs
-            else JISTPlanner.Defaults.sigma_goal
+        self.sigma_start = kwargs.pop("sigma_start", JISTPlanner.Defaults.sigma_start)
+        self.sigma_vel_limit = kwargs.pop(
+            "sigma_vel_limit", JISTPlanner.Defaults.sigma_vel_limit
         )
-        self.sigma_goal_costco = (
-            kwargs["sigma_goal_costco"]
-            if "sigma_goal_costco" in kwargs
-            else JISTPlanner.Defaults.sigma_goal_costco
+        self.sigma_diff_control = kwargs.pop(
+            "sigma_diff_control", JISTPlanner.Defaults.sigma_diff_control
         )
-        self.sigma_start = (
-            kwargs["sigma_start"]
-            if "sigma_start" in kwargs
-            else JISTPlanner.Defaults.sigma_start
-        )
-        self.sigma_vel_limit = (
-            kwargs["sigma_vel_limit"]
-            if "sigma_vel_limit" in kwargs
-            else JISTPlanner.Defaults.sigma_vel_limit
-        )
-        self.sigma_diff_control = (
-            kwargs["sigma_diff_control"]
-            if "sigma_diff_control" in kwargs
-            else JISTPlanner.Defaults.sigma_diff_control
-        )
-        self.use_trustregion_opt = (
-            kwargs["use_trustregion_opt"]
-            if "use_trustregion_opt" in kwargs
-            else JISTPlanner.Defaults.use_trustregion_opt
+        self.use_trustregion_opt = kwargs.pop(
+            "use_trustregion_opt", JISTPlanner.Defaults.use_trustregion_opt
         )
 
         # RRT params
-        self.node_budget = (
-            kwargs["node_budget"]
-            if "node_budget" in kwargs
-            else JISTPlanner.Defaults.node_budget
-        )
-        self.step_multiplier = (
-            kwargs["step_multiplier"]
-            if "step_multiplier" in kwargs
-            else JISTPlanner.Defaults.step_multiplier
+        self.node_budget = kwargs.pop("node_budget", JISTPlanner.Defaults.node_budget)
+        self.step_multiplier = kwargs.pop(
+            "step_multiplier", JISTPlanner.Defaults.step_multiplier
         )
 
         # Target criteria
-        self.target_region_radius = (
-            kwargs["target_region_radius"]
-            if "target_region_radius" in kwargs
-            else JISTPlanner.Defaults.target_region_radius
+        self.target_region_radius = kwargs.pop(
+            "target_region_radius", JISTPlanner.Defaults.target_region_radius
         )
 
         # General parameters
-        self.time_step = (
-            kwargs["time_step"]
-            if "time_step" in kwargs
-            else JISTPlanner.Defaults.time_step
-        )
-        self.reuse_previous_graph = (
-            kwargs["reuse_previous_graph"]
-            if "reuse_previous_graph" in kwargs
-            else JISTPlanner.Defaults.reuse_previous_graph
+        self.time_step = kwargs.pop("time_step", JISTPlanner.Defaults.time_step)
+        self.reuse_previous_graph = kwargs.pop(
+            "reuse_previous_graph", JISTPlanner.Defaults.reuse_previous_graph
         )
 
-        self.random_seed = kwargs["seed"] if "seed" in kwargs else None
+        self.random_seed = kwargs.pop("seed", None)
         self.random = Random(self.random_seed)
 
         # Graphs
@@ -414,13 +373,13 @@ class JISTPlanner(object):
         return cur_id
 
     def _update_goal_models(self, start, target):
+        # Why the #&*! does it get formatted like that???
         tempsigma = self.sigma_goal_costco * (
             1
             - (
                 1
                 / (
-                    0.25
-                    * np.linalg.norm(target - self.nodes[self.current_node_id].pose)
+                    0.2 * np.linalg.norm(target - self.nodes[self.current_node_id].pose)
                     + 1
                 )
             )
@@ -433,7 +392,14 @@ class JISTPlanner(object):
         )
 
     # ---------------- Interface ----------------
-    def plan(self, start: np.ndarray, target: np.ndarray, target_vels: np.ndarray, grid: np.ndarray, num_steps: int):
+    def plan(
+        self,
+        start: np.ndarray,
+        target: np.ndarray,
+        target_vels: np.ndarray,
+        grid: np.ndarray,
+        num_steps: int,
+    ):
         """
         Parameters
         ----------
@@ -463,7 +429,7 @@ class JISTPlanner(object):
 
             step += 1
 
-        return controls    
+        return controls
 
     def plan_with_path(self, start, target, target_vels, grid, grid_grain, num_steps):
         step = 0
