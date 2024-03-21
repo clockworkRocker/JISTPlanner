@@ -4,6 +4,7 @@
  
 # -------- Anything python-related --------
 __pycache__/
+*.egg-info
 
 results/
 multirun/

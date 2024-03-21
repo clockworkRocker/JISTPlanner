@@ -419,13 +419,18 @@ def plotRobotModel2D(figure, axis, robot, conf, color_rgb=[0.4, 0.4, 0.4]):
     #   @color_rgb  optional color RGB values, default is gray [0.4 0.4 0.4]
 
     # points
-    body_points = robot.sphereCentersMat(conf)
+    body_points = robot.sphereCentersMat(Pose2(*conf))
+    r0 =  robot.sphere_radius(0)
 
     for i in range(robot.nr_body_spheres()):
         # TODO: check if it is body_points[:,i] or body_point[i,:]
         plotSphere2D(
             figure, axis, robot.sphere_radius(i), body_points[:, i], color=color_rgb
         )
+
+        # Plot orientation
+        axis.plot([conf[0], conf[0] + r0 * np.cos(conf[2])],
+                  [conf[1], conf[1] + r0 * np.sin(conf[2])])
 
 
 def set3DPlotRange(figure, axis, dataset):

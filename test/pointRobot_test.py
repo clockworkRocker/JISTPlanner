@@ -6,8 +6,8 @@ from gpmp2 import *
 import argparse
 
 
-from modules.datasets.generate2Ddataset import *
-from modules.jist import *
+from jist.datasets.generate2Ddataset import *
+from jist.jist import *
 import hydra
 import sys
 

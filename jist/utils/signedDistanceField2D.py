@@ -25,7 +25,7 @@ def signedDistanceField2D(ground_truth_map, cell_size):
     cur_map = ground_truth_map > 0.75
     cur_map = cur_map.astype(int)
 
-    if np.amax(cur_map) is 0:
+    if np.amax(cur_map) == 0:
         return np.ones(ground_truth_map.shape) * 1000
 
     # inverse map
@@ -39,7 +39,6 @@ def signedDistanceField2D(ground_truth_map, cell_size):
     field = map_dist - inv_map_dist
 
     # metric
-    field = field * cell_size
-    field = field.astype(float)
+    field = field.astype(float) * cell_size
 
     return field

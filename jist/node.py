@@ -6,7 +6,7 @@ class Node(object):
     Node of a exploring tree in the configuration space
     """
 
-    def __init__(self, id, pose, vels=None):
+    def __init__(self, id: int, pose: np.ndarray, vels=None):
         self.id = id
         self.pose = pose
         """Phase variables in given state"""
@@ -30,3 +30,6 @@ class Node(object):
 
     def __str__(self):
         return str(self.id) + ": " + str(self.neighbours.keys())
+
+    def __repr__(self):
+        return f"(X = ({[pos for pos in self.pose]}), V = ({[vel for vel in self.vels]})"

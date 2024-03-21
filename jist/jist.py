@@ -4,17 +4,10 @@ from gpmp2 import *
 from random import seed
 from random import Random
 import copy
-import math
 import time
-from utils.plot_utils import *
-from utils.signedDistanceField2D import signedDistanceField2D
+from .utils.plot_utils import *
+from .utils.signedDistanceField2D import signedDistanceField2D
 
-
-import numpy as np
-from gtsam import *
-from gpmp2 import *
-import copy
-import math
 from abc import ABCMeta, abstractmethod
 
 
@@ -127,7 +120,7 @@ class Node(object):
 
 #### Dijkstra specific stuff
 
-from Queue import PriorityQueue
+from queue import PriorityQueue
 
 
 class PlannerBase(object):
@@ -166,10 +159,10 @@ class PlannerBase(object):
 def update_planner_graph(result, planner_graph):
     for key in planner_graph:
         planner_graph[key].pose = result.atVector(
-            symbol(ord("x"), planner_graph[key].planner_id)
+            symbol("x", planner_graph[key].planner_id)
         )
         planner_graph[key].vel = result.atVector(
-            symbol(ord("v"), planner_graph[key].planner_id)
+            symbol("v", planner_graph[key].planner_id)
         )
 
 
@@ -219,7 +212,7 @@ def make_point_robot(num_dof=2, radius=1.5):
     nr_body = spheres_data.shape[0]
     sphere_vec = BodySphereVector()
     sphere_vec.push_back(
-        BodySphere(spheres_data[0], spheres_data[4], Point3(spheres_data[1:4]))
+        BodySphere(int(spheres_data[0]), spheres_data[4], Point3(spheres_data[1:4]))
     )
     return PointRobotModel(pR, sphere_vec)
 
@@ -239,10 +232,10 @@ def get_local_frame_vels(temp_vel, yaw):
 # Useful for upsampling gpmp solution and plotting
 def get_interpolated_points(curNode, nextNode, problem):
     values = Values()
-    values.insert(symbol(ord("x"), 0), curNode.pose)
-    values.insert(symbol(ord("v"), 0), curNode.vel)
-    values.insert(symbol(ord("x"), 1), nextNode.pose)
-    values.insert(symbol(ord("v"), 1), nextNode.vel)
+    values.insert(symbol("x", 0), curNode.pose)
+    values.insert(symbol("v", 0), curNode.vel)
+    values.insert(symbol("x", 1), nextNode.pose)
+    values.insert(symbol("v", 1), nextNode.vel)
 
     interpolated_values = interpolateArmTraj(
         values, problem.Qc_model, problem.delta_t, problem.inter_step
@@ -251,7 +244,7 @@ def get_interpolated_points(curNode, nextNode, problem):
     total_time_step = interpolated_values.size()
     points = []
     for i in range(total_time_step / 2):
-        points.append(interpolated_values.atVector(symbol(ord("x"), i)))
+        points.append(interpolated_values.atVector(symbol("x", i)))
 
     return points
 
@@ -280,50 +273,50 @@ def make_problem_from_config(
 ):
     problem = Problem()
 
-    problem.seed_val = problem_config.seed_val
-    problem.time_out_time = problem_config.time_out_time
+    problem.seed_val = problem_config["seed_val"]
+    problem.time_out_time = problem_config["time_out_time"]
 
     # Robot
-    problem.radius = problem_config.radius
-    problem.vehicle_dynamics = problem_config.vehicle_dynamics
-    problem.vehicle_model = problem_config.vehicle_model
+    problem.radius = problem_config["radius"]
+    problem.vehicle_dynamics = problem_config["vehicle_dynamics"]
+    problem.vehicle_model = problem_config["vehicle_model"]
 
     # Noise model
-    problem.use_noise = problem_config.use_noise
-    problem.sensor_noise = problem_config.sensor_noise
-    problem.action_noise = problem_config.action_noise
+    problem.use_noise = problem_config["use_noise"]
+    problem.sensor_noise = problem_config["sensor_noise"]
+    problem.action_noise = problem_config["action_noise"]
 
     # Sensor/SDF
-    problem.sdf_side = problem_config.sdf_side
+    problem.sdf_side = problem_config["sdf_side"]
 
     # Core GPMP config
-    problem.use_GP_inter = problem_config.use_GP_inter
-    problem.inter_step = problem_config.inter_step
+    problem.use_GP_inter = problem_config["use_GP_inter"]
+    problem.inter_step = problem_config["inter_step"]
 
     # GPMP-Factor related
-    problem.use_vel_limit = problem_config.use_vel_limit
-    problem.sigma_vel_limit = problem_config.sigma_vel_limit
-    problem.cost_sigma = problem_config.cost_sigma
-    problem.epsilon_dist = problem_config.epsilon_dist
+    problem.use_vel_limit = problem_config["use_vel_limit"]
+    problem.sigma_vel_limit = problem_config["sigma_vel_limit"]
+    problem.cost_sigma = problem_config["cost_sigma"]
+    problem.epsilon_dist = problem_config["epsilon_dist"]
     #    problem.sigma_goal_rh = problem_config.sigma_goal_rh
-    problem.sigma_goal_costco = problem_config.sigma_goal_costco
-    problem.sigma_start = problem_config.sigma_start
-    problem.use_trustregion_opt = problem_config.use_trustregion_opt
+    problem.sigma_goal_costco = problem_config["sigma_goal_costco"]
+    problem.sigma_start = problem_config["sigma_start"]
+    problem.use_trustregion_opt = problem_config["use_trustregion_opt"]
 
     # Receding Horizon specific things
     # problem.same_state_init = problem_config.same_state_init
-    problem.use_prev_graph = problem_config.use_prev_graph
+    problem.use_prev_graph = problem_config["use_prev_graph"]
     # problem.window_size = problem_config.node_budget
     # problem.init_fraction_length = problem_config.init_fraction_length
-    problem.goal_region_threshold = problem_config.goal_region_threshold
+    problem.goal_region_threshold = problem_config["goal_region_threshold"]
     # problem.connection_threshold = problem_config.connection_threshold
 
     # RRT specific things
-    problem.node_num = problem_config.node_budget
-    problem.width = problem_config.width
-    problem.height = problem_config.height
-    problem.move_along_val = problem_config.move_along_val
-    problem.move_along_val_theta = problem_config.move_along_val_theta
+    problem.node_num = problem_config["node_budget"]
+    problem.width = problem_config["width"]
+    problem.height = problem_config["height"]
+    problem.move_along_val = problem_config["move_along_val"]
+    problem.move_along_val_theta = problem_config["move_along_val_theta"]
 
     # start and end conf
     problem.start_conf = np.asarray(start_conf)
@@ -344,8 +337,8 @@ def make_problem_from_config(
     problem.obstacle_factor_function = ObstaclePlanarSDFFactorPointRobot
     problem.obstalce_gp_factor_function = ObstaclePlanarSDFFactorGPPointRobot
 
-    problem.delta_t = problem_config.delta_t
-    problem.avg_vel = problem_config.avg_vel * np.ones(problem.num_dof)
+    problem.delta_t = problem_config["delta_t"]
+    problem.avg_vel = problem_config["avg_vel"] * np.ones(problem.num_dof)
 
     # point robot model
     problem.gpmp_robot = make_point_robot(
@@ -354,27 +347,27 @@ def make_problem_from_config(
 
     # GP
     problem.Qc = np.identity(problem.gpmp_robot.dof())
-    problem.Qc_model = noiseModel_Gaussian.Covariance(problem.Qc)
+    problem.Qc_model = noiseModel.Gaussian.Covariance(problem.Qc)
 
     # Obstacle avoid settings
 
     # prior to start/goal
 
-    problem.pose_fix_model = noiseModel_Isotropic.Sigma(
+    problem.pose_fix_model = noiseModel.Isotropic.Sigma(
         problem.gpmp_robot.dof(), problem.sigma_goal_costco
     )
-    problem.vel_fix_model = noiseModel_Isotropic.Sigma(
+    problem.vel_fix_model = noiseModel.Isotropic.Sigma(
         problem.gpmp_robot.dof(), problem.sigma_goal_costco
     )
 
-    problem.pose_fix_model_start = noiseModel_Isotropic.Sigma(
+    problem.pose_fix_model_start = noiseModel.Isotropic.Sigma(
         problem.gpmp_robot.dof(), problem.sigma_start
     )
-    problem.vel_fix_model_start = noiseModel_Isotropic.Sigma(
+    problem.vel_fix_model_start = noiseModel.Isotropic.Sigma(
         problem.gpmp_robot.dof(), problem.sigma_start
     )
 
-    problem.vel_limit_model = noiseModel_Isotropic.Sigma(
+    problem.vel_limit_model = noiseModel.Isotropic.Sigma(
         problem.gpmp_robot.dof(), problem.sigma_vel_limit
     )
 
@@ -387,7 +380,7 @@ def make_problem_from_config(
     problem.planner_id = 0
     problem.curr_conf = problem.start_conf
 
-    problem.costco_goal_scaling = problem_config.costco_goal_scaling
+    problem.costco_goal_scaling = problem_config["costco_goal_scaling"]
 
     return problem
 
@@ -526,8 +519,8 @@ def get_gtsam_graph(node_list, problem):
 
     # add all nodes
     for i in node_list:
-        key_pos = symbol(ord("x"), i)
-        key_vel = symbol(ord("v"), i)
+        key_pos = symbol("x", i)
+        key_vel = symbol("v", i)
 
         # % initialize as straight line in conf space
         init_values.insert(key_pos, node_list[i].pose)
@@ -594,10 +587,10 @@ def get_gtsam_graph(node_list, problem):
 
         # Connect nodes with costs
         for neigh_id in node_list[i].neighbours:
-            key_pos1 = symbol(ord("x"), i)
-            key_pos2 = symbol(ord("x"), neigh_id)
-            key_vel1 = symbol(ord("v"), i)
-            key_vel2 = symbol(ord("v"), neigh_id)
+            key_pos1 = symbol("x", i)
+            key_pos2 = symbol("x", neigh_id)
+            key_vel1 = symbol("v", i)
+            key_vel2 = symbol("v", neigh_id)
 
             graph.push_back(
                 problem.gp_factor_function(
@@ -660,7 +653,7 @@ def pruned_graph(cur_planner_id, nodes):
 
 #### Dijkstra specific stuff
 
-from Queue import PriorityQueue
+from queue import PriorityQueue
 
 
 class PlannerRRT(PlannerBase):
@@ -896,13 +889,13 @@ def rrt_chain(start_conf, goal_conf, dataset, problem, plot_mode="debug"):
 
         curstate = planner_graph[cur_planner_st_id].pose
 
-        problem.pose_fix_model = noiseModel_Isotropic.Sigma(
+        problem.pose_fix_model = noiseModel.Isotropic.Sigma(
             problem.gpmp_robot.dof(),
             problem.sigma_goal_costco
             * np.linalg.norm(curstate - problem.end_conf)
             / init_distance,
         )
-        problem.vel_fix_model = noiseModel_Isotropic.Sigma(
+        problem.vel_fix_model = noiseModel.Isotropic.Sigma(
             problem.gpmp_robot.dof(),
             problem.sigma_goal_costco
             * np.linalg.norm(curstate - problem.end_conf)
@@ -994,7 +987,7 @@ def rrt_chain(start_conf, goal_conf, dataset, problem, plot_mode="debug"):
                 axis.plot(start_conf[0], start_conf[1], "ro", markersize=3)
                 axis.plot(goal_conf[0], goal_conf[1], "go", markersize=3)
                 # figure.savefig('costco_' + str(plot_iteration) + '.eps', format='eps')
-                figure.savefig("costco_" + str(plot_iteration) + ".png", dpi=figure.dpi)
+                figure.savefig("img/costco_" + str(plot_iteration) + ".png", dpi=figure.dpi)
                 plt.pause(problem.pause_time)
                 plot_iteration += 1
 
