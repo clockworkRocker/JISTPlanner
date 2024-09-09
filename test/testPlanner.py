@@ -12,6 +12,7 @@ from jist.datasets.dataset2D import make_random
 
 NUM_DOF = 3
 
+
 def print_graph(nodes):
     print("Graph:")
     for key in nodes:
@@ -51,8 +52,9 @@ def make_obstacle_map(
 
 def main():
     spheres = [
-        Sphere(np.array([0.3, 0]), 0.6),
-        Sphere(np.array([-0.3, 0]), 0.6),
+        Sphere(np.array([0, 0]), 0.7),
+        Sphere(np.array([0.115, 0]), 0.7),
+        Sphere(np.array([-0.115, 0]), 0.7),
     ]
     geometry = mobile_base_geometry(spheres)
     robot = make_mobile_base(geometry, 1.5, 0.6, 1)
@@ -70,23 +72,39 @@ def main():
         "sigma_goal_costco": 2,
         "num_path_interpolations": 3,
         "target_region_radius": 0.3,
-        "avg_vel": 0.001,
     }
 
-    planner = PlottingPlanner(robot, **configs)
+    planner = PlottingPlanner(
+        robot,
+        sdf_side=8.0,
+        sdf_step=8.0 / 160.0,
+        node_budget=128,
+        epsilon_dist=0.6,
+        cost_sigma=0.1,
+        num_path_interpolations=3,
+        sigma_vel_limit=1e-3,
+        sigma_diff_control=1e-3,
+        step_multiplier=0.1,
+        sigma_goal_costco=2,
+        search_limit=3,
+        time_step=0.05,
+        target_region_radius=0.2,
+        avg_vel=0.001,
+        # **configs
+    )
     start = np.asarray([0.75, 0.75, -3 * np.pi / 4])
     target = np.asarray([7.1, 7.1, 0])
 
     # map = make_obstacle_map(
     #     160, 160, configs["sdf_side"], 0.4, obst_num=9, use_border=False, seed=150
     # )
-    dataset = make_random(12, 1., (0., 10.))
+    dataset = make_random(12, 1.0, (0.0, 10.0))
 
     path, result = planner.plan(
         start,
         target,
         np.zeros(NUM_DOF),
-        dataset.map(8., 8., 0.05, start),
+        dataset.map(8.0, 8.0, 0.05, start),
         32,
     )
     print("Controls:", result)
@@ -96,7 +114,7 @@ def main():
             path[-1],
             target,
             np.zeros(NUM_DOF),
-            dataset.map(8., 8., 0.05, path[-1]),
+            dataset.map(8.0, 8.0, 0.05, path[-1]),
             32,
         )
         print("Controls:", result)
